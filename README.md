@@ -8,6 +8,7 @@ Example lines in map.txt:
 "texture bricks = bricks0.jpg" - Loads an image named "bricks0.jpg" and initializes it as "bricks" in the file. Textures must be initialized before they can be used for anything else. The root directory for textures is map.txt's parent directory.
 
 "floortex dirt" - Sets the floor texture to "dirt," which would have been initialized earlier (example: "texture dirt = cool_dirt.png")
+
 "ceiltex blue_stone" - Sets the ceiling texture to "blue_stone". The floor and ceiling textures should have square resolutions, because they will be tiled on the floor and ceiling. Each 1x1 square on the floor or ceiling will contain a texture.
 
 "startpos 50, 50" - Sets the player's start position to 50, 50
