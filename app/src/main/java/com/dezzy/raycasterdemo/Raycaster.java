@@ -58,8 +58,8 @@ public class Raycaster extends View
 
     private volatile boolean rendering = false;
 
-    private static final float PLAYER_RADIUS = 0.2f;
-    private static final float SPACING = 0.005f;
+    private static final float PLAYER_RADIUS = 0.25f;
+    private static final float SPACING = 0.015f;
 
     public Raycaster(Context context) {
         super(context);
@@ -590,6 +590,7 @@ public class Raycaster extends View
     }
 
     private final class MoveControl extends CircleControl {
+        private static final float SPEEDMULT = 0.9f;
 
         public MoveControl(final Point defaultLocIn, float radiusIn, float thresholdIn) {
             super(defaultLocIn, radiusIn, thresholdIn);
@@ -610,7 +611,7 @@ public class Raycaster extends View
 
             final float x = x0 + x1;
             final float y = y0 + y1;
-            final Point vel = new Point(x, y);
+            final Point vel = new Point(x * SPEEDMULT, y * SPEEDMULT);
             final Point endPos = Fizix.moveInWorld(pos, vel, lines, PLAYER_RADIUS, SPACING, 2);
             pos.x = endPos.x;
             pos.y = endPos.y;
@@ -625,7 +626,7 @@ public class Raycaster extends View
 
         @Override
         protected void handleMovement() {
-            rotateRight((loc.x - defaultLoc.x) * 1.2f);
+            rotateRight((loc.x - defaultLoc.x));
         }
     }
 

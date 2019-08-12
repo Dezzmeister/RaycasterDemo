@@ -21,12 +21,13 @@ public class Fizix {
             final CollisionPacket packet = collisions.get(0);
             final Point attemptedDest = new Point(startAt.x + vel.x, startAt.y + vel.y);
             final Point newLocation = approach(attemptedDest, packet, radius, spacing);
-            final Point newVelocity = getSlidingVector(vel, packet.wouldHit);
+            final Point intermediateVelocity = getSlowerVelocity(startAt, newLocation, vel);
+            final Point newVelocity = getSlidingVector(intermediateVelocity, packet.wouldHit);
 
             return moveInWorld(newLocation, newVelocity, lines, radius, spacing, iterations - 1);
         }
-        if (collisions.size() == 2) {
-            final CollisionPacket packet = determineCloserPacket(startAt, collisions.get(0), collisions.get(1));
+        if (collisions.size() >= 2) {
+            final CollisionPacket packet = getClosestCandidate(collisions);
 
             if (packet != null) {
                 final Point attemptedDest = new Point(startAt.x + vel.x, startAt.y + vel.y);
@@ -38,6 +39,27 @@ public class Fizix {
         }
 
         return startAt;
+    }
+
+    private static Point getSlowerVelocity(final Point startAt, final Point currentLoc, final Point vel) {
+        final float totalDistance = Raycaster.distance(vel, new Point(0, 0));
+        final float traveledDistance = Raycaster.distance(startAt, currentLoc);
+        final float remainingDistance = totalDistance - traveledDistance;
+        final Point normVel = new Point(vel.x / totalDistance, vel.y / totalDistance);
+
+        return new Point(normVel.x * remainingDistance, normVel.y * remainingDistance);
+    }
+
+    private static CollisionPacket getClosestCandidate(final List<CollisionPacket> packets) {
+        CollisionPacket closestCandidate = packets.get(0);
+
+        for (int i = 1; i < packets.size(); i++) {
+            if (packets.get(i).distanceSqr < closestCandidate.distanceSqr) {
+                closestCandidate = packets.get(i);
+            }
+        }
+
+        return closestCandidate;
     }
 
     private static CollisionPacket determineCloserPacket(final Point startAt, final CollisionPacket packet0, final CollisionPacket packet1) {
