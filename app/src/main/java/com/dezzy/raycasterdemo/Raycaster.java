@@ -59,7 +59,7 @@ public class Raycaster extends View
     private volatile boolean rendering = false;
 
     private static final float PLAYER_RADIUS = 0.2f;
-    private static final float PLAYER_RADIUS_SQR = PLAYER_RADIUS * PLAYER_RADIUS;
+    private static final float SPACING = 0.005f;
 
     public Raycaster(Context context) {
         super(context);
@@ -442,7 +442,7 @@ public class Raycaster extends View
 
                                     for (int y = startY2; y < endY; y++) {
                                         float normY = (y - startY)/(float)lineHeight;
-                                        int texY = (int)(wall.texture.getHeight() * normY * wall.yTiles) % wall.texture.getHeight();
+                                        int texY = Math.abs((int)(wall.texture.getHeight() * normY * wall.yTiles) % wall.texture.getHeight());
                                         int color = wall.texture.getPixel(texX, texY);
 
                                         pixels[x + y * renderWidth] = darken(color, dist);
@@ -507,15 +507,16 @@ public class Raycaster extends View
         return 0xff000000 | (red << 16) | (green << 8) | blue;
     }
 
-    private static class Line {
-        private final Point p0, p1;
-        private final float length;
-        private final float lensqr;
-        private final Bitmap texture;
-        private final int xTiles;
-        private final int yTiles;
-        private final float xDiff;
-        private final float yDiff;
+    public static class Line {
+        public final Point p0, p1;
+        public final float length;
+        public final float lensqr;
+        public final Point normal;
+        public final Bitmap texture;
+        public final int xTiles;
+        public final int yTiles;
+        public final float xDiff;
+        public final float yDiff;
 
         public Line(final Point p0In, final Point p1In, final Bitmap textureIn, int xTilesIn, int yTilesIn) {
             p0 = p0In;
@@ -528,6 +529,11 @@ public class Raycaster extends View
             lensqr = length * length;
             xDiff = p1.x - p0.x;
             yDiff = p1.y - p0.y;
+
+            normal = new Point(-yDiff, xDiff);
+            float normLen = distance(normal, new Point(0, 0));
+            normal.x /= normLen;
+            normal.y /= normLen;
         }
 
         public Line(final Point p0In, final Point p1In, final Bitmap textureIn) {
@@ -535,12 +541,16 @@ public class Raycaster extends View
         }
     }
 
-    private static class Point {
-        private float x, y;
+    public static class Point {
+        public float x, y;
 
-        private Point(float _x, float _y) {
+        public Point(float _x, float _y) {
             x = _x;
             y = _y;
+        }
+
+        public float dot(final Point p) {
+            return (x * p.x) + (y * p.y);
         }
     }
 
@@ -579,32 +589,6 @@ public class Raycaster extends View
         return Math.abs(angle1-angle2);
     }
 
-    private static Point lineHitPlayer(final Line wall, final Point pos) {
-        float dot = (((pos.x - wall.p0.x) * (wall.xDiff)) + ((pos.y - wall.p0.y) * (wall.yDiff))) / wall.lensqr;
-
-        float x = wall.p0.x + (dot * wall.xDiff);
-        float y = wall.p0.y + (dot * wall.yDiff);
-
-        Point out = new Point(x, y);
-        float d0 = distance(out, wall.p0);
-        float d1 = distance(out, wall.p1);
-
-        if (d0 + d1 > wall.length + 0.0005f) {
-            return (d0 < d1) ? new Point(wall.p0.x, wall.p0.y) : new Point(wall.p1.x, wall.p1.y);
-        }
-
-        return out;
-    }
-
-    private void move(float x, float y) {
-        Point dest = new Point(pos.x + x, pos.y + y);
-
-        for (Line l : lines) {
-            Point closest = lineHitPlayer(l, dest);
-
-        }
-    }
-
     private final class MoveControl extends CircleControl {
 
         public MoveControl(final Point defaultLocIn, float radiusIn, float thresholdIn) {
@@ -613,8 +597,23 @@ public class Raycaster extends View
 
         @Override
         protected void handleMovement() {
-            moveForward(defaultLoc.y - loc.y);
-            moveRight((loc.x - defaultLoc.x) * 0.4f);
+            //moveForward(defaultLoc.y - loc.y);
+            //moveRight((loc.x - defaultLoc.x) * 0.4f);
+            final float xFactor = (loc.x - defaultLoc.x);
+            final float yFactor = (defaultLoc.y - loc.y);
+
+            float x0 = yFactor * dir.x;
+            float y0 = yFactor * dir.y;
+
+            float x1 = xFactor * sidedir.x;
+            float y1 = xFactor * sidedir.y;
+
+            final float x = x0 + x1;
+            final float y = y0 + y1;
+            final Point vel = new Point(x, y);
+            final Point endPos = Fizix.moveInWorld(pos, vel, lines, PLAYER_RADIUS, SPACING, 2);
+            pos.x = endPos.x;
+            pos.y = endPos.y;
         }
     }
 
@@ -626,7 +625,7 @@ public class Raycaster extends View
 
         @Override
         protected void handleMovement() {
-            rotateRight((loc.x - defaultLoc.x) * 0.4f);
+            rotateRight((loc.x - defaultLoc.x) * 1.2f);
         }
     }
 
